@@ -7,19 +7,19 @@
       "path": "./apps/user"
     },
     {
-      "path": "./blog"
-    },
-    {
-      "path": "./notify"
-    },
-    {
-      "path": "./api-gateway"
-    },
-    {
       "path": "./apps/comment"
     },
     {
       "path": "./libs/shared-types"
+    },
+    {
+      "path": "./apps/api-gateway"
+    },
+    {
+      "path": "./apps/notify"
+    },
+    {
+      "path": "./apps/blog"
     }
   ]
 }
