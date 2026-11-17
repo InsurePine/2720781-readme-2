@@ -1,3 +1,9 @@
+Локальный запуск
+npm ci --include=dev
+export JWT_SECRET="$(node -p "require('node:crypto').randomBytes(32).toString('hex')")"
+npx nx run-many -t serve -p user blog comment --inspect=false
+
+
 # Project
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
