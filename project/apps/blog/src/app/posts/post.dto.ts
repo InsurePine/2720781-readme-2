@@ -1,12 +1,11 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
-  IsArray,
   IsIn,
-  IsOptional,
   IsString,
   IsUrl,
-  IsUUID,
+  ValidateIf,
+  IsNotEmpty,
 } from 'class-validator';
 import type {
   PostStatus,
@@ -55,7 +54,6 @@ class PostFieldsDto {
   description!: string;
 
   @ApiProperty({ type: [String], maxItems: 8 })
-  @IsArray()
   @ArrayMaxSize(8)
   @IsString({ each: true })
   tags!: string[];
@@ -70,14 +68,15 @@ export class CreatePostDto extends OptionalPostFields {
   @IsIn(types)
   type!: PostType;
 
-  @ApiProperty({ format: 'uuid' })
-  @IsUUID()
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   authorId!: string;
 }
 
 export class UpdatePostDto extends OptionalPostFields {
   @ApiPropertyOptional({ enum: statuses })
-  @IsOptional()
+  @ValidateIf(({ status }: UpdatePostDto) => status !== undefined)
   @IsIn(statuses)
   status?: PostStatus;
 }

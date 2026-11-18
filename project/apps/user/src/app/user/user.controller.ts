@@ -1,25 +1,25 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseFilters } from '@nestjs/common';
 import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserRepository } from './user.repository';
+import { UserExceptionFilter } from './user-exception.filter';
+import { UserService } from './user.service';
 import { UserResponseDto } from './user-response.dto';
 
 @ApiTags('users')
+@UseFilters(UserExceptionFilter)
 @Controller('users')
 export class UserController {
-  constructor(private readonly users: UserRepository) {}
+  constructor(private readonly users: UserService) {}
 
   @Get(':id')
   @ApiOperation({ summary: 'Получить профиль пользователя' })
   @ApiOkResponse({ type: UserResponseDto })
   @ApiNotFoundResponse({ description: 'Пользователь не найден.' })
   getUser(@Param('id') id: string) {
-    const user = this.users.findById(id);
-    if (!user) throw new NotFoundException('Пользователь не найден');
-    return user.toUser();
+    return this.users.get(id).toUser();
   }
 }

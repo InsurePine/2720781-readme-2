@@ -1,9 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CommentEntity } from './comment.entity';
+import { CommentNotFoundError } from './comment.errors';
 import { ReactionsRepository } from './reactions.repository';
 
 const PAGE_SIZE = 50;
@@ -13,14 +10,11 @@ export class ReactionsService {
   constructor(private readonly reactions: ReactionsRepository) {}
 
   list(postId: string, page: number) {
-    if (page < 1)
-      throw new BadRequestException('Номер страницы должен быть не меньше 1');
-    const comments = this.reactions.list(postId).reverse();
-    return {
-      items: comments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-      page,
-      total: comments.length,
-    };
+    return this.reactions.findComments(
+      postId,
+      (page - 1) * PAGE_SIZE,
+      PAGE_SIZE,
+    );
   }
 
   create(postId: string, authorId: string, text: string) {
@@ -29,16 +23,15 @@ export class ReactionsService {
 
   delete(postId: string, id: string) {
     const comment = this.reactions.find(id);
-    if (!comment || comment.postId !== postId)
-      throw new NotFoundException('Комментарий не найден');
+    if (!comment || comment.postId !== postId) throw new CommentNotFoundError();
     this.reactions.remove(id);
   }
 
   like(postId: string, userId: string) {
-    return { likesCount: this.reactions.like({ postId, userId }) };
+    return this.reactions.like({ postId, userId });
   }
 
   unlike(postId: string, userId: string) {
-    return { likesCount: this.reactions.unlike({ postId, userId }) };
+    return this.reactions.unlike({ postId, userId });
   }
 }

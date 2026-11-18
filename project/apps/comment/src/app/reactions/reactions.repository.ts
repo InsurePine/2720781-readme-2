@@ -7,10 +7,14 @@ export class ReactionsRepository {
   private readonly comments = new Map<string, CommentEntity>();
   private readonly likesByPost = new Map<string, Set<string>>();
 
-  list(postId: string) {
-    return Array.from(this.comments.values()).filter(
-      (comment) => comment.postId === postId,
-    );
+  findComments(postId: string, offset: number, limit: number) {
+    const comments = Array.from(this.comments.values())
+      .filter((comment) => comment.postId === postId)
+      .reverse();
+    return {
+      items: comments.slice(offset, offset + limit),
+      total: comments.length,
+    };
   }
 
   find(id: string) {

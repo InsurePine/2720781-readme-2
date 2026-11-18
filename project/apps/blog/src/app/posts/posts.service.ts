@@ -1,11 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { CreatePostDto, UpdatePostDto } from './post.dto';
+import { Injectable } from '@nestjs/common';
 import { PostEntity } from './post.entity';
+import { PostNotFoundError } from './post.errors';
 import { PostRepository } from './post.repository';
+import type { CreatePost, UpdatePost } from './post.types';
 
 const PAGE_SIZE = 25;
 
@@ -14,36 +11,21 @@ export class PostsService {
   constructor(private readonly posts: PostRepository) {}
 
   list(page: number) {
-    if (page < 1)
-      throw new BadRequestException('Номер страницы должен быть не меньше 1');
-    const items = this.posts
-      .list()
-      .map((post) => post.data)
-      .filter((post) => post.status === 'published')
-      .sort((first, second) =>
-        second.publishedAt.localeCompare(first.publishedAt),
-      );
-    return {
-      items: items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-      page,
-      total: items.length,
-    };
+    return this.posts.findPublished((page - 1) * PAGE_SIZE, PAGE_SIZE);
   }
 
   get(id: string) {
-    const post = this.posts.find(id);
-    if (post?.data.status !== 'published')
-      throw new NotFoundException('Публикация не найдена');
-    return post.data;
-  }
-
-  create(input: CreatePostDto) {
-    return this.posts.save(PostEntity.create(input)).data;
-  }
-
-  update(id: string, input: UpdatePostDto) {
     const post = this.find(id);
-    return this.posts.save(post.update(input)).data;
+    if (post.data.status !== 'published') throw new PostNotFoundError();
+    return post;
+  }
+
+  create(input: CreatePost) {
+    return this.posts.save(PostEntity.create(input));
+  }
+
+  update(id: string, input: UpdatePost) {
+    return this.posts.save(this.find(id).update(input));
   }
 
   delete(id: string) {
@@ -53,7 +35,7 @@ export class PostsService {
 
   private find(id: string) {
     const post = this.posts.find(id);
-    if (!post) throw new NotFoundException('Публикация не найдена');
+    if (!post) throw new PostNotFoundError();
     return post;
   }
 }

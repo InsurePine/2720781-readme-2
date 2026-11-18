@@ -1,15 +1,14 @@
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
   Param,
-  ParseIntPipe,
   Post,
   Put,
   Query,
+  UseFilters,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -18,7 +17,6 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -27,9 +25,12 @@ import {
   CreateCommentDto,
   LikeCountDto,
 } from './reactions.dto';
+import { CommentExceptionFilter } from './comment-exception.filter';
+import { CommentQueryDto } from './comment-query.dto';
 import { ReactionsService } from './reactions.service';
 
 @ApiTags('comments and likes')
+@UseFilters(CommentExceptionFilter)
 @Controller('posts/:postId')
 export class ReactionsController {
   constructor(private readonly reactions: ReactionsService) {}
@@ -37,17 +38,14 @@ export class ReactionsController {
   @Get('comments')
   @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
   @ApiOperation({ summary: 'Получить комментарии к публикации' })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    schema: { type: 'integer', minimum: 1, default: 1 },
-  })
   @ApiOkResponse({ type: CommentPageDto })
-  list(
-    @Param('postId') postId: string,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-  ) {
-    return this.reactions.list(postId, page);
+  list(@Param('postId') postId: string, @Query() query: CommentQueryDto) {
+    const result = this.reactions.list(postId, query.page);
+    return {
+      items: result.items.map((comment) => ({ ...comment })),
+      page: query.page,
+      total: result.total,
+    };
   }
 
   @Post('comments')
@@ -55,7 +53,8 @@ export class ReactionsController {
   @ApiOperation({ summary: 'Добавить комментарий' })
   @ApiCreatedResponse({ type: CommentResponseDto })
   create(@Param('postId') postId: string, @Body() input: CreateCommentDto) {
-    return this.reactions.create(postId, input.authorId, input.text);
+    const comment = this.reactions.create(postId, input.authorId, input.text);
+    return { ...comment };
   }
 
   @Delete('comments/:id')
@@ -71,13 +70,13 @@ export class ReactionsController {
   @ApiOperation({ summary: 'Поставить лайк' })
   @ApiOkResponse({ type: LikeCountDto })
   like(@Param('postId') postId: string, @Param('userId') userId: string) {
-    return this.reactions.like(postId, userId);
+    return { likesCount: this.reactions.like(postId, userId) };
   }
 
   @Delete('likes/:userId')
   @ApiOperation({ summary: 'Снять лайк' })
   @ApiOkResponse({ type: LikeCountDto })
   unlike(@Param('postId') postId: string, @Param('userId') userId: string) {
-    return this.reactions.unlike(postId, userId);
+    return { likesCount: this.reactions.unlike(postId, userId) };
   }
 }

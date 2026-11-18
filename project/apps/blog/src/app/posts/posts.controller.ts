@@ -1,15 +1,14 @@
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
+  UseFilters,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -18,7 +17,6 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -27,9 +25,12 @@ import {
   PostResponseDto,
   UpdatePostDto,
 } from './post.dto';
+import { PostExceptionFilter } from './post-exception.filter';
+import { PostQueryDto } from './post-query.dto';
 import { PostsService } from './posts.service';
 
 @ApiTags('posts')
+@UseFilters(PostExceptionFilter)
 @Controller('posts')
 export class PostsController {
   constructor(private readonly posts: PostsService) {}
@@ -37,14 +38,14 @@ export class PostsController {
   @Get()
   @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
   @ApiOperation({ summary: 'Получить опубликованные записи' })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    schema: { type: 'integer', minimum: 1, default: 1 },
-  })
   @ApiOkResponse({ type: PostPageDto })
-  list(@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number) {
-    return this.posts.list(page);
+  list(@Query() query: PostQueryDto) {
+    const result = this.posts.list(query.page);
+    return {
+      items: result.items.map((post) => post.data),
+      page: query.page,
+      total: result.total,
+    };
   }
 
   @Get(':id')
@@ -52,7 +53,7 @@ export class PostsController {
   @ApiNotFoundResponse({ description: 'Объект не найден.' })
   @ApiOkResponse({ type: PostResponseDto })
   get(@Param('id') id: string) {
-    return this.posts.get(id);
+    return this.posts.get(id).data;
   }
 
   @Post()
@@ -60,7 +61,7 @@ export class PostsController {
   @ApiOperation({ summary: 'Создать публикацию' })
   @ApiCreatedResponse({ type: PostResponseDto })
   create(@Body() input: CreatePostDto) {
-    return this.posts.create(input);
+    return this.posts.create(input).data;
   }
 
   @Patch(':id')
@@ -69,7 +70,7 @@ export class PostsController {
   @ApiNotFoundResponse({ description: 'Объект не найден.' })
   @ApiOkResponse({ type: PostResponseDto })
   update(@Param('id') id: string, @Body() input: UpdatePostDto) {
-    return this.posts.update(id, input);
+    return this.posts.update(id, input).data;
   }
 
   @Delete(':id')

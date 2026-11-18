@@ -5,8 +5,13 @@ import { PostEntity } from './post.entity';
 export class PostRepository {
   private readonly posts = new Map<string, PostEntity>();
 
-  list() {
-    return Array.from(this.posts.values());
+  findPublished(offset: number, limit: number) {
+    const posts = Array.from(this.posts.values())
+      .filter((post) => post.data.status === 'published')
+      .sort((first, second) =>
+        second.data.publishedAt.localeCompare(first.data.publishedAt),
+      );
+    return { items: posts.slice(offset, offset + limit), total: posts.length };
   }
 
   find(id: string) {

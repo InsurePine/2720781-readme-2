@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException } from '@nestjs/common';
 import type { Post } from '@project/shared-types' with { 'resolution-mode': 'import' };
-import type { CreatePostDto, UpdatePostDto } from './post.dto';
+import { InvalidPostContentError } from './post.errors';
+import type { CreatePost, UpdatePost } from './post.types';
 
 export class PostEntity {
   private constructor(public readonly data: Post) {}
 
-  static create(input: CreatePostDto) {
+  static create(input: CreatePost) {
     const now = new Date().toISOString();
     return new PostEntity({
       ...content(input),
@@ -20,7 +20,7 @@ export class PostEntity {
     });
   }
 
-  update(input: UpdatePostDto) {
+  update(input: UpdatePost) {
     const { status, tags, ...fields } = input;
     return new PostEntity({
       ...this.data,
@@ -38,11 +38,11 @@ function normalizeTags(tags: string[]) {
 }
 
 function required(value: string | undefined, field: string) {
-  if (!value?.trim()) throw new BadRequestException(`Заполните поле ${field}`);
+  if (!value?.trim()) throw new InvalidPostContentError(field);
   return value;
 }
 
-function content(input: CreatePostDto) {
+function content(input: CreatePost) {
   switch (input.type) {
     case 'video':
       return {

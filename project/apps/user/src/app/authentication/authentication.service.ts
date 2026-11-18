@@ -1,49 +1,27 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Injectable } from '@nestjs/common';
 import { UserEntity } from '../user/user.entity';
+import {
+  EmailAlreadyExistsError,
+  InvalidCredentialsError,
+} from '../user/user.errors';
 import { UserRepository } from '../user/user.repository';
-import type { LoginDto, RegisterDto } from './authentication.dto';
+import type { LoginUser, RegisterUser } from '../user/user.types';
 
 @Injectable()
 export class AuthenticationService {
-  constructor(
-    private readonly users: UserRepository,
-    private readonly jwt: JwtService,
-  ) {}
+  constructor(private readonly users: UserRepository) {}
 
-  async register(input: RegisterDto) {
-    const firstName = input.firstName.trim();
-    const lastName = input.lastName.trim();
-    if (
-      !firstName ||
-      !lastName ||
-      Array.from(`${firstName} ${lastName}`).length > 50
-    ) {
-      throw new BadRequestException(
-        'Укажите имя и фамилию общей длиной до 50 символов',
-      );
-    }
-
-    const user = await UserEntity.create(
-      { ...input, firstName, lastName },
-      input.password,
-    );
-    if (!this.users.insert(user)) {
-      throw new ConflictException('Пользователь с таким email уже существует');
-    }
-    return user.toUser();
+  async register(input: RegisterUser) {
+    const user = await UserEntity.create(input, input.password);
+    if (!this.users.insert(user)) throw new EmailAlreadyExistsError();
+    return user;
   }
 
-  async login({ email, password }: LoginDto) {
+  async login({ email, password }: LoginUser) {
     const user = this.users.findByEmail(email);
     if (!user || !(await user.comparePassword(password))) {
-      throw new UnauthorizedException('Неверный email или пароль');
+      throw new InvalidCredentialsError();
     }
-    return { accessToken: await this.jwt.signAsync({ sub: user.id }) };
+    return user;
   }
 }

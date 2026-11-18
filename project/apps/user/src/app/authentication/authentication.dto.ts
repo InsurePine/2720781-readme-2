@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEmail, Length } from 'class-validator';
+import { IsEmail, IsString, Length } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({ example: 'reader@example.com' })
@@ -22,11 +22,11 @@ export class LoginDto {
 
 export class RegisterDto extends LoginDto {
   @ApiProperty({ example: 'Анна' })
-  @Length(1, 50)
+  @IsString()
   firstName!: string;
 
   @ApiProperty({ example: 'Соколова' })
-  @Length(1, 50)
+  @IsString()
   lastName!: string;
 }
 

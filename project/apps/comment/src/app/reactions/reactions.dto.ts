@@ -1,10 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsUUID, Length } from 'class-validator';
+import { IsNotEmpty, IsString, Length } from 'class-validator';
 import type { Comment } from '@project/shared-types' with { 'resolution-mode': 'import' };
 
 export class CreateCommentDto {
-  @ApiProperty({ format: 'uuid' })
-  @IsUUID()
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
   authorId!: string;
 
   @ApiProperty({
@@ -19,9 +20,9 @@ export class CreateCommentDto {
 export class CommentResponseDto implements Comment {
   @ApiProperty({ format: 'uuid' })
   id!: string;
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty()
   postId!: string;
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty()
   authorId!: string;
   @ApiProperty()
   text!: string;
