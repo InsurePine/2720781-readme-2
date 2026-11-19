@@ -1,23 +1,16 @@
-import { randomUUID } from 'node:crypto';
 import type { Post } from '@project/shared-types' with { 'resolution-mode': 'import' };
 import { InvalidPostContentError } from './post.errors';
 import type { CreatePost, UpdatePost } from './post.types';
 
 export class PostEntity {
-  private constructor(public readonly data: Post) {}
+  constructor(public readonly data: Post) {}
 
-  static create(input: CreatePost) {
-    const now = new Date().toISOString();
-    return new PostEntity({
+  static prepare(input: CreatePost) {
+    return {
       ...content(input),
-      id: randomUUID(),
       authorId: input.authorId,
-      createdAt: now,
-      publishedAt: now,
-      status: 'published',
-      isRepost: false,
       tags: normalizeTags(input.tags ?? []),
-    });
+    };
   }
 
   update(input: UpdatePost) {

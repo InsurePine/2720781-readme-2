@@ -6,8 +6,8 @@ import { UserRepository } from './user.repository';
 export class UserService {
   constructor(private readonly users: UserRepository) {}
 
-  get(id: string) {
-    const user = this.users.findById(id);
+  async get(id: string) {
+    const user = await this.users.findById(id);
     if (!user) throw new UserNotFoundError();
     return user;
   }

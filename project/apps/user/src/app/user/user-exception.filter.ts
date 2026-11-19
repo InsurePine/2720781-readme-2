@@ -1,6 +1,5 @@
 import { Catch } from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
 import {
   EmailAlreadyExistsError,
   InvalidCredentialsError,
@@ -9,8 +8,6 @@ import {
 
 @Catch(UserNotFoundError, EmailAlreadyExistsError, InvalidCredentialsError)
 export class UserExceptionFilter implements ExceptionFilter {
-  constructor(private readonly adapterHost: HttpAdapterHost) {}
-
   catch(
     error:
       | UserNotFoundError
@@ -18,10 +15,8 @@ export class UserExceptionFilter implements ExceptionFilter {
       | InvalidCredentialsError,
     host: ArgumentsHost,
   ) {
-    const response = host.switchToHttp().getResponse();
     let statusCode = 401;
     let description = 'Unauthorized';
-
     if (error instanceof UserNotFoundError) {
       statusCode = 404;
       description = 'Not Found';
@@ -29,15 +24,10 @@ export class UserExceptionFilter implements ExceptionFilter {
       statusCode = 409;
       description = 'Conflict';
     }
-
-    this.adapterHost.httpAdapter.reply(
-      response,
-      {
-        statusCode,
-        message: error.message,
-        error: description,
-      },
+    host.switchToHttp().getResponse().status(statusCode).json({
       statusCode,
-    );
+      message: error.message,
+      error: description,
+    });
   }
 }

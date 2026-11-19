@@ -1,45 +1,69 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { isValidObjectId, Model, mongo } from 'mongoose';
 import type { Like } from '@project/shared-types' with { 'resolution-mode': 'import' };
 import { CommentEntity } from './comment.entity';
+import { CommentModel } from './comment.model';
+import type { CommentDocument } from './comment.model';
+import { LikeModel } from './like.model';
 
 @Injectable()
 export class ReactionsRepository {
-  private readonly comments = new Map<string, CommentEntity>();
-  private readonly likesByPost = new Map<string, Set<string>>();
+  constructor(
+    @InjectModel(CommentModel.name)
+    private readonly comments: Model<CommentModel>,
+    @InjectModel(LikeModel.name) private readonly likes: Model<LikeModel>,
+  ) {}
 
-  findComments(postId: string, offset: number, limit: number) {
-    const comments = Array.from(this.comments.values())
-      .filter((comment) => comment.postId === postId)
-      .reverse();
-    return {
-      items: comments.slice(offset, offset + limit),
-      total: comments.length,
-    };
+  async findComments(postId: string, offset: number, limit: number) {
+    const filter = { postId };
+    const [comments, total] = await Promise.all([
+      this.comments
+        .find(filter)
+        .sort({ createdAt: -1, _id: -1 })
+        .skip(offset)
+        .limit(limit)
+        .exec(),
+      this.comments.countDocuments(filter).exec(),
+    ]);
+    return { items: comments.map((comment) => this.toEntity(comment)), total };
   }
 
-  find(id: string) {
-    return this.comments.get(id);
+  async add(postId: string, authorId: string, text: string) {
+    return this.toEntity(
+      await this.comments.create({ postId, authorId, text }),
+    );
   }
 
-  add(comment: CommentEntity) {
-    this.comments.set(comment.id, comment);
-    return comment;
+  async remove(postId: string, id: string) {
+    if (!isValidObjectId(id)) return false;
+    const result = await this.comments.deleteOne({ _id: id, postId }).exec();
+    return result.deletedCount > 0;
   }
 
-  remove(id: string) {
-    this.comments.delete(id);
+  async like(input: Like) {
+    await this.likes.init();
+    try {
+      await this.likes.create(input);
+    } catch (error) {
+      if (!(error instanceof mongo.MongoServerError && error.code === 11000))
+        throw error;
+    }
+    return this.likes.countDocuments({ postId: input.postId }).exec();
   }
 
-  like({ postId, userId }: Like) {
-    const likes = this.likesByPost.get(postId) ?? new Set<string>();
-    likes.add(userId);
-    this.likesByPost.set(postId, likes);
-    return likes.size;
+  async unlike(input: Like) {
+    await this.likes.deleteOne(input).exec();
+    return this.likes.countDocuments({ postId: input.postId }).exec();
   }
 
-  unlike({ postId, userId }: Like) {
-    const likes = this.likesByPost.get(postId);
-    likes?.delete(userId);
-    return likes?.size ?? 0;
+  private toEntity(comment: CommentDocument) {
+    return new CommentEntity({
+      id: comment._id.toString(),
+      postId: comment.postId,
+      authorId: comment.authorId,
+      text: comment.text,
+      createdAt: comment.createdAt.toISOString(),
+    });
   }
 }

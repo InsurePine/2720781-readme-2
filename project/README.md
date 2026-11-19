@@ -2,7 +2,10 @@
 npm ci --include=dev
 export JWT_SECRET="$(node -p "require('node:crypto').randomBytes(32).toString('hex')")"
 npx nx run-many -t serve -p user blog comment --inspect=false
-
+Чтобы запустить все базы в Docker:
+docker compose --env-file apps/user/.env.example -f apps/user/docker-compose.yml up -d --wait && docker compose --env-file apps/blog/.env.example -f apps/blog/docker-compose.yml up -d --wait && docker compose --env-file apps/comment/.env.example -f apps/comment/docker-compose.yml up -d --wait
+Чтобы остановить:
+docker compose --env-file apps/user/.env.example -f apps/user/docker-compose.yml down && docker compose --env-file apps/blog/.env.example -f apps/blog/docker-compose.yml down && docker compose --env-file apps/comment/.env.example -f apps/comment/docker-compose.yml down
 
 # Project
 

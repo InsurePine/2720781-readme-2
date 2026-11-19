@@ -39,10 +39,10 @@ export class ReactionsController {
   @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
   @ApiOperation({ summary: 'Получить комментарии к публикации' })
   @ApiOkResponse({ type: CommentPageDto })
-  list(@Param('postId') postId: string, @Query() query: CommentQueryDto) {
-    const result = this.reactions.list(postId, query.page);
+  async list(@Param('postId') postId: string, @Query() query: CommentQueryDto) {
+    const result = await this.reactions.list(postId, query.page);
     return {
-      items: result.items.map((comment) => ({ ...comment })),
+      items: result.items.map((comment) => comment.data),
       page: query.page,
       total: result.total,
     };
@@ -52,9 +52,12 @@ export class ReactionsController {
   @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
   @ApiOperation({ summary: 'Добавить комментарий' })
   @ApiCreatedResponse({ type: CommentResponseDto })
-  create(@Param('postId') postId: string, @Body() input: CreateCommentDto) {
-    const comment = this.reactions.create(postId, input.authorId, input.text);
-    return { ...comment };
+  async create(
+    @Param('postId') postId: string,
+    @Body() input: CreateCommentDto,
+  ) {
+    return (await this.reactions.create(postId, input.authorId, input.text))
+      .data;
   }
 
   @Delete('comments/:id')
@@ -62,21 +65,24 @@ export class ReactionsController {
   @ApiOperation({ summary: 'Удалить комментарий' })
   @ApiNotFoundResponse({ description: 'Объект не найден.' })
   @ApiNoContentResponse()
-  delete(@Param('postId') postId: string, @Param('id') id: string) {
-    this.reactions.delete(postId, id);
+  async delete(@Param('postId') postId: string, @Param('id') id: string) {
+    await this.reactions.delete(postId, id);
   }
 
   @Put('likes/:userId')
   @ApiOperation({ summary: 'Поставить лайк' })
   @ApiOkResponse({ type: LikeCountDto })
-  like(@Param('postId') postId: string, @Param('userId') userId: string) {
-    return { likesCount: this.reactions.like(postId, userId) };
+  async like(@Param('postId') postId: string, @Param('userId') userId: string) {
+    return { likesCount: await this.reactions.like(postId, userId) };
   }
 
   @Delete('likes/:userId')
   @ApiOperation({ summary: 'Снять лайк' })
   @ApiOkResponse({ type: LikeCountDto })
-  unlike(@Param('postId') postId: string, @Param('userId') userId: string) {
-    return { likesCount: this.reactions.unlike(postId, userId) };
+  async unlike(
+    @Param('postId') postId: string,
+    @Param('userId') userId: string,
+  ) {
+    return { likesCount: await this.reactions.unlike(postId, userId) };
   }
 }
