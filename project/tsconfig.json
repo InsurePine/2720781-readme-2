@@ -7,28 +7,19 @@
       "path": "./apps/user"
     },
     {
-      "path": "./blog-e2e"
-    },
-    {
-      "path": "./blog"
-    },
-    {
-      "path": "./notify-e2e"
-    },
-    {
-      "path": "./notify"
-    },
-    {
-      "path": "./api-gateway-e2e"
-    },
-    {
-      "path": "./api-gateway"
-    },
-    {
-      "path": "./apps/comment-e2e"
-    },
-    {
       "path": "./apps/comment"
+    },
+    {
+      "path": "./libs/shared-types"
+    },
+    {
+      "path": "./apps/api-gateway"
+    },
+    {
+      "path": "./apps/notify"
+    },
+    {
+      "path": "./apps/blog"
     }
   ]
 }

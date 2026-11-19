@@ -1,4 +1,4 @@
-{
+s{
   "name": "@project/source",
   "version": "0.0.0",
   "license": "MIT",
@@ -38,6 +38,7 @@
     "notify",
     "notify-e2e",
     "api-gateway",
-    "api-gateway-e2e"
+    "api-gateway-e2e",
+    "libs/*"
   ]
 }

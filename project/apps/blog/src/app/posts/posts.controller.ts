@@ -1,0 +1,84 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseFilters,
+} from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  CreatePostDto,
+  PostPageDto,
+  PostResponseDto,
+  UpdatePostDto,
+} from './post.dto';
+import { PostExceptionFilter } from './post-exception.filter';
+import { PostQueryDto } from './post-query.dto';
+import { PostsService } from './posts.service';
+
+@ApiTags('posts')
+@UseFilters(PostExceptionFilter)
+@Controller('posts')
+export class PostsController {
+  constructor(private readonly posts: PostsService) {}
+
+  @Get()
+  @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
+  @ApiOperation({ summary: 'Получить опубликованные записи' })
+  @ApiOkResponse({ type: PostPageDto })
+  list(@Query() query: PostQueryDto) {
+    const result = this.posts.list(query.page);
+    return {
+      items: result.items.map((post) => post.data),
+      page: query.page,
+      total: result.total,
+    };
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Получить публикацию' })
+  @ApiNotFoundResponse({ description: 'Объект не найден.' })
+  @ApiOkResponse({ type: PostResponseDto })
+  get(@Param('id') id: string) {
+    return this.posts.get(id).data;
+  }
+
+  @Post()
+  @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
+  @ApiOperation({ summary: 'Создать публикацию' })
+  @ApiCreatedResponse({ type: PostResponseDto })
+  create(@Body() input: CreatePostDto) {
+    return this.posts.create(input).data;
+  }
+
+  @Patch(':id')
+  @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
+  @ApiOperation({ summary: 'Изменить публикацию' })
+  @ApiNotFoundResponse({ description: 'Объект не найден.' })
+  @ApiOkResponse({ type: PostResponseDto })
+  update(@Param('id') id: string, @Body() input: UpdatePostDto) {
+    return this.posts.update(id, input).data;
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Удалить публикацию' })
+  @ApiNotFoundResponse({ description: 'Объект не найден.' })
+  @ApiNoContentResponse()
+  delete(@Param('id') id: string) {
+    this.posts.delete(id);
+  }
+}
