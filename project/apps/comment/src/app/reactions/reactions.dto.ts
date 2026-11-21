@@ -18,7 +18,10 @@ export class CreateCommentDto {
 }
 
 export class CommentResponseDto implements Comment {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439011',
+    description: 'MongoDB ObjectId',
+  })
   id!: string;
   @ApiProperty()
   postId!: string;

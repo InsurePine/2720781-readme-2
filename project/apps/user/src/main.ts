@@ -1,4 +1,5 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
@@ -18,7 +19,9 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Readme — API сервиса User')
-    .setDescription('Регистрация, вход и получение профиля пользователя.')
+    .setDescription(
+      'Регистрация, вход и получение профиля. Пользователи хранятся в MongoDB.',
+    )
     .setVersion('1.0.0')
     .addTag('auth', 'Регистрация и аутентификация')
     .addTag('users', 'Профили пользователей')
@@ -27,7 +30,7 @@ async function bootstrap() {
     SwaggerModule.createDocument(app, swaggerConfig),
   );
 
-  const port = process.env.PORT || 3000;
+  const port = Number(app.get(ConfigService).get('PORT') ?? 3000);
   await app.listen(port);
   Logger.log(
     `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`,

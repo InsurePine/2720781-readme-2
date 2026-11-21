@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CommentEntity } from './comment.entity';
 import { CommentNotFoundError } from './comment.errors';
 import { ReactionsRepository } from './reactions.repository';
 
@@ -18,13 +17,12 @@ export class ReactionsService {
   }
 
   create(postId: string, authorId: string, text: string) {
-    return this.reactions.add(new CommentEntity(postId, authorId, text));
+    return this.reactions.add(postId, authorId, text);
   }
 
-  delete(postId: string, id: string) {
-    const comment = this.reactions.find(id);
-    if (!comment || comment.postId !== postId) throw new CommentNotFoundError();
-    this.reactions.remove(id);
+  async delete(postId: string, id: string) {
+    if (!(await this.reactions.remove(postId, id)))
+      throw new CommentNotFoundError();
   }
 
   like(postId: string, userId: string) {

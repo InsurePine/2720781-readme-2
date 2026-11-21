@@ -14,27 +14,29 @@ export class PostsService {
     return this.posts.findPublished((page - 1) * PAGE_SIZE, PAGE_SIZE);
   }
 
-  get(id: string) {
-    const post = this.find(id);
+  async get(id: string) {
+    const post = await this.find(id);
     if (post.data.status !== 'published') throw new PostNotFoundError();
     return post;
   }
 
   create(input: CreatePost) {
-    return this.posts.save(PostEntity.create(input));
+    return this.posts.create(PostEntity.prepare(input));
   }
 
-  update(id: string, input: UpdatePost) {
-    return this.posts.save(this.find(id).update(input));
+  async update(id: string, input: UpdatePost) {
+    const post = await this.find(id);
+    const updated = await this.posts.save(post.update(input));
+    if (!updated) throw new PostNotFoundError();
+    return updated;
   }
 
-  delete(id: string) {
-    this.find(id);
-    this.posts.remove(id);
+  async delete(id: string) {
+    if (!(await this.posts.remove(id))) throw new PostNotFoundError();
   }
 
-  private find(id: string) {
-    const post = this.posts.find(id);
+  private async find(id: string) {
+    const post = await this.posts.find(id);
     if (!post) throw new PostNotFoundError();
     return post;
   }

@@ -1,21 +1,48 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { isValidObjectId, Model, mongo } from 'mongoose';
 import { UserEntity } from './user.entity';
+import { UserModel } from './user.model';
+import type { UserDocument } from './user.model';
+import type { NewUser } from './user.types';
 
 @Injectable()
 export class UserRepository {
-  private readonly users = new Map<string, UserEntity>();
+  constructor(
+    @InjectModel(UserModel.name) private readonly users: Model<UserModel>,
+  ) {}
 
-  findById(id: string) {
-    return this.users.get(id);
+  async findById(id: string) {
+    if (!isValidObjectId(id)) return null;
+    const user = await this.users.findById(id).exec();
+    return user ? this.toEntity(user) : null;
   }
 
-  findByEmail(email: string) {
-    return Array.from(this.users.values()).find((user) => user.email === email);
+  async findByEmail(email: string) {
+    const user = await this.users.findOne({ email }).exec();
+    return user ? this.toEntity(user) : null;
   }
 
-  insert(user: UserEntity) {
-    if (this.findByEmail(user.email)) return false;
-    this.users.set(user.id, user);
-    return true;
+  async create(input: NewUser) {
+    await this.users.init();
+    try {
+      return this.toEntity(await this.users.create(input));
+    } catch (error) {
+      if (error instanceof mongo.MongoServerError && error.code === 11000)
+        return null;
+      throw error;
+    }
+  }
+
+  private toEntity(user: UserDocument) {
+    return new UserEntity({
+      id: user._id.toString(),
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatarUrl: user.avatarUrl,
+      registeredAt: user.registeredAt.toISOString(),
+      passwordHash: user.passwordHash,
+    });
   }
 }

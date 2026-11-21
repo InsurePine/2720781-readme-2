@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import type { JwtModuleOptions } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
@@ -9,9 +10,10 @@ import { AuthenticationService } from './authentication.service';
   imports: [
     UserModule,
     JwtModule.registerAsync({
-      useFactory: (): JwtModuleOptions => {
-        const secret = process.env.JWT_SECRET;
-        if (!secret || Buffer.byteLength(secret) < 32) {
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): JwtModuleOptions => {
+        const secret = config.getOrThrow<string>('JWT_SECRET');
+        if (Buffer.byteLength(secret) < 32) {
           throw new Error('JWT_SECRET должен содержать не менее 32 байт');
         }
 

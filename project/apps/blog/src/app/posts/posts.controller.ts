@@ -39,8 +39,8 @@ export class PostsController {
   @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
   @ApiOperation({ summary: 'Получить опубликованные записи' })
   @ApiOkResponse({ type: PostPageDto })
-  list(@Query() query: PostQueryDto) {
-    const result = this.posts.list(query.page);
+  async list(@Query() query: PostQueryDto) {
+    const result = await this.posts.list(query.page);
     return {
       items: result.items.map((post) => post.data),
       page: query.page,
@@ -52,16 +52,16 @@ export class PostsController {
   @ApiOperation({ summary: 'Получить публикацию' })
   @ApiNotFoundResponse({ description: 'Объект не найден.' })
   @ApiOkResponse({ type: PostResponseDto })
-  get(@Param('id') id: string) {
-    return this.posts.get(id).data;
+  async get(@Param('id') id: string) {
+    return (await this.posts.get(id)).data;
   }
 
   @Post()
   @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
   @ApiOperation({ summary: 'Создать публикацию' })
   @ApiCreatedResponse({ type: PostResponseDto })
-  create(@Body() input: CreatePostDto) {
-    return this.posts.create(input).data;
+  async create(@Body() input: CreatePostDto) {
+    return (await this.posts.create(input)).data;
   }
 
   @Patch(':id')
@@ -69,8 +69,8 @@ export class PostsController {
   @ApiOperation({ summary: 'Изменить публикацию' })
   @ApiNotFoundResponse({ description: 'Объект не найден.' })
   @ApiOkResponse({ type: PostResponseDto })
-  update(@Param('id') id: string, @Body() input: UpdatePostDto) {
-    return this.posts.update(id, input).data;
+  async update(@Param('id') id: string, @Body() input: UpdatePostDto) {
+    return (await this.posts.update(id, input)).data;
   }
 
   @Delete(':id')
@@ -78,7 +78,7 @@ export class PostsController {
   @ApiOperation({ summary: 'Удалить публикацию' })
   @ApiNotFoundResponse({ description: 'Объект не найден.' })
   @ApiNoContentResponse()
-  delete(@Param('id') id: string) {
-    this.posts.delete(id);
+  async delete(@Param('id') id: string) {
+    await this.posts.delete(id);
   }
 }

@@ -1,11 +1,27 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ReactionsModule } from './reactions/reactions.module';
 
 @Module({
-  imports: [ReactionsModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: 'apps/comment/.env',
+    }),
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        uri: `mongodb://${config.getOrThrow<string>('MONGO_HOST')}:${config.getOrThrow<string>('MONGO_PORT')}`,
+        dbName: config.getOrThrow<string>('MONGO_DB'),
+        user: config.getOrThrow<string>('MONGO_USER'),
+        pass: config.getOrThrow<string>('MONGO_PASSWORD'),
+        authSource: config.getOrThrow<string>('MONGO_AUTH_SOURCE'),
+      }),
+    }),
+    ReactionsModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

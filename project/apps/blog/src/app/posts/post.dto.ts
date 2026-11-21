@@ -2,9 +2,9 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
   IsIn,
+  ValidateIf,
   IsString,
   IsUrl,
-  ValidateIf,
   IsNotEmpty,
 } from 'class-validator';
 import type {
@@ -82,7 +82,10 @@ export class UpdatePostDto extends OptionalPostFields {
 }
 
 export class PostResponseDto extends CreatePostDto {
-  @ApiProperty({ format: 'uuid' })
+  @ApiProperty({
+    example: '507f1f77bcf86cd799439011',
+    description: 'MongoDB ObjectId',
+  })
   id!: string;
 
   @ApiProperty({ enum: statuses })
