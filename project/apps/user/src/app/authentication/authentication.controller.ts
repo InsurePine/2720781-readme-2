@@ -48,7 +48,7 @@ export class AuthenticationController {
       firstName,
       lastName,
     });
-    return user.toUser();
+    return user.toUserResponse();
   }
 
   @Post('login')

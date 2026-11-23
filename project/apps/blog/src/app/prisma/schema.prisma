@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PostType {
+  video
+  text
+  quote
+  photo
+  link
+}
+
+enum PostStatus {
+  published
+  draft
+}
+
+model Post {
+  id               String     @id @default(uuid())
+  type             PostType
+  authorId         String     @map("author_id")
+  status           PostStatus @default(published)
+  createdAt        DateTime   @default(now()) @map("created_at")
+  publishedAt      DateTime   @default(now()) @map("published_at")
+  isRepost         Boolean    @default(false) @map("is_repost")
+  originalPostId   String?    @map("original_post_id")
+  originalAuthorId String?    @map("original_author_id")
+  title            String?
+  videoUrl         String?    @map("video_url")
+  announcement     String?
+  text             String?
+  quote            String?
+  quoteAuthor      String?    @map("quote_author")
+  imageUrl         String?    @map("image_url")
+  url              String?
+  description      String?
+  tags             Tag[]
+
+  @@map("posts")
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  posts Post[]
+
+  @@map("tags")
+}

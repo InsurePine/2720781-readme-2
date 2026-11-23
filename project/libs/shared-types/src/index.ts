@@ -15,4 +15,8 @@ export type {
   VideoPost,
 } from './lib/post.interface.js';
 export type { Subscription } from './lib/subscription.interface.js';
-export type { AuthUser, User, UserDetails } from './lib/user.interface.js';
+export type {
+  User,
+  UserDetails,
+  UserWithPasswordHash,
+} from './lib/user.interface.js';

@@ -1,0 +1,50 @@
+{
+  "name": "@project/blog",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/blog/src",
+  "projectType": "application",
+  "targets": {
+    "db-validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node ../../node_modules/prisma/build/index.js validate --schema src/app/prisma/schema.prisma",
+        "cwd": "apps/blog"
+      }
+    },
+    "db-generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node ../../node_modules/prisma/build/index.js generate --schema src/app/prisma/schema.prisma",
+        "cwd": "apps/blog"
+      }
+    },
+    "db-reset": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node ../../node_modules/prisma/build/index.js migrate reset --schema src/app/prisma/schema.prisma",
+        "cwd": "apps/blog"
+      }
+    },
+    "db-migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node ../../node_modules/prisma/build/index.js migrate dev --schema src/app/prisma/schema.prisma",
+        "cwd": "apps/blog"
+      }
+    },
+    "db-fill": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["db-generate"],
+      "options": {
+        "command": "node --env-file=.env --import=tsx src/app/prisma/seed.ts",
+        "cwd": "apps/blog"
+      }
+    },
+    "build": {
+      "dependsOn": ["db-generate", "^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["db-generate", "^typecheck"]
+    }
+  }
+}

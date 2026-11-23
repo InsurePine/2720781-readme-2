@@ -1,23 +1,14 @@
 import { Catch } from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
-import { InvalidPostContentError, PostNotFoundError } from './post.errors';
+import { PostNotFoundError } from './post.errors';
 
-@Catch(PostNotFoundError, InvalidPostContentError)
+@Catch(PostNotFoundError)
 export class PostExceptionFilter implements ExceptionFilter {
-  catch(
-    error: PostNotFoundError | InvalidPostContentError,
-    host: ArgumentsHost,
-  ) {
-    const missing = error instanceof PostNotFoundError;
-    const statusCode = missing ? 404 : 400;
-    host
-      .switchToHttp()
-      .getResponse()
-      .status(statusCode)
-      .json({
-        statusCode,
-        message: error.message,
-        error: missing ? 'Not Found' : 'Bad Request',
-      });
+  catch(error: PostNotFoundError, host: ArgumentsHost) {
+    host.switchToHttp().getResponse().status(404).json({
+      statusCode: 404,
+      message: error.message,
+      error: 'Not Found',
+    });
   }
 }

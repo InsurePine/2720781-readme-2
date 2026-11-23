@@ -7,6 +7,12 @@ docker compose --env-file apps/user/.env.example -f apps/user/docker-compose.yml
 Чтобы остановить:
 docker compose --env-file apps/user/.env.example -f apps/user/docker-compose.yml down && docker compose --env-file apps/blog/.env.example -f apps/blog/docker-compose.yml down && docker compose --env-file apps/comment/.env.example -f apps/comment/docker-compose.yml down
 
+При первом запуске Postgres
+
+npx nx run blog:db-migrate
+npx nx run blog:db-fill
+
+
 # Project
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>

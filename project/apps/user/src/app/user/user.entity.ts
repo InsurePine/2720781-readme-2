@@ -1,15 +1,10 @@
-import { compare, hash } from 'bcrypt';
 import type {
-  AuthUser,
+  UserWithPasswordHash,
   User,
 } from '@project/shared-types' with { 'resolution-mode': 'import' };
 
 export class UserEntity {
-  constructor(private readonly data: AuthUser) {}
-
-  static hashPassword(password: string) {
-    return hash(password, 12);
-  }
+  constructor(private readonly data: UserWithPasswordHash) {}
 
   get id() {
     return this.data.id;
@@ -18,11 +13,11 @@ export class UserEntity {
     return this.data.email;
   }
 
-  comparePassword(password: string) {
-    return compare(password, this.data.passwordHash);
+  get passwordHash() {
+    return this.data.passwordHash;
   }
 
-  toUser(): User {
+  toUserResponse(): User {
     const { id, email, firstName, lastName, avatarUrl, registeredAt } =
       this.data;
     return { id, email, firstName, lastName, avatarUrl, registeredAt };

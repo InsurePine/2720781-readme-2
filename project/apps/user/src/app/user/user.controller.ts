@@ -23,6 +23,6 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Пользователь не найден.' })
   async getUser(@Param('id') id: string) {
     const user = await this.users.get(id);
-    return user.toUser();
+    return user.toUserResponse();
   }
 }
