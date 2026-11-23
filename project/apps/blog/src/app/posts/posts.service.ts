@@ -26,7 +26,8 @@ export class PostsService {
 
   async update(id: string, input: UpdatePost) {
     const post = await this.findById(id);
-    const updated = await this.posts.update(post.update(input));
+    post.update(input);
+    const updated = await this.posts.update(post);
     if (!updated) throw new PostNotFoundError();
     return updated;
   }

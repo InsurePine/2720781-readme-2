@@ -8,13 +8,10 @@ export class PostEntity {
     return { ...input, tags: normalizeTags(input.tags ?? []) };
   }
 
-  update(input: UpdatePost) {
-    return new PostEntity({
-      ...this.data,
-      ...input,
-      tags:
-        input.tags === undefined ? this.data.tags : normalizeTags(input.tags),
-    } as Post);
+  update(input: UpdatePost): void {
+    const tags =
+      input.tags === undefined ? this.data.tags : normalizeTags(input.tags);
+    Object.assign(this.data, input, { tags });
   }
 }
 

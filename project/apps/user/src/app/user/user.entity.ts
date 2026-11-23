@@ -17,7 +17,7 @@ export class UserEntity {
     return this.data.passwordHash;
   }
 
-  toUserResponse(): User {
+  toHttpResponse(): User {
     const { id, email, firstName, lastName, avatarUrl, registeredAt } =
       this.data;
     return { id, email, firstName, lastName, avatarUrl, registeredAt };
