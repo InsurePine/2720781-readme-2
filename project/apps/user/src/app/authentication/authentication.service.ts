@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserEntity } from '../user/user.entity';
+import { compare, hash } from 'bcrypt';
 import {
   EmailAlreadyExistsError,
   InvalidCredentialsError,
@@ -18,7 +18,7 @@ export class AuthenticationService {
   async register({ password, ...input }: RegisterUser) {
     const user = await this.users.create({
       ...input,
-      passwordHash: await UserEntity.hashPassword(password),
+      passwordHash: await hash(password, 12),
     });
     if (!user) throw new EmailAlreadyExistsError();
     return user;
@@ -26,7 +26,7 @@ export class AuthenticationService {
 
   async login({ email, password }: LoginUser) {
     const user = await this.users.findByEmail(email);
-    if (!user || !(await user.comparePassword(password)))
+    if (!user || !(await compare(password, user.passwordHash)))
       throw new InvalidCredentialsError();
     return this.jwt.signAsync({ sub: user.id });
   }

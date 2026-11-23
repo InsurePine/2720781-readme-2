@@ -3,8 +3,6 @@ name: readme-user
 services:
   mongo:
     image: mongo:8.3.17
-    env_file:
-      - .env.example
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
@@ -22,8 +20,6 @@ services:
 
   mongo-express:
     image: mongo-express:1.0.2-20-alpine3.19
-    env_file:
-       - .env.exzmple
     depends_on:
       mongo:
         condition: service_healthy

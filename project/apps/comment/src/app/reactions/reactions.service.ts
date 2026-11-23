@@ -8,7 +8,7 @@ const PAGE_SIZE = 50;
 export class ReactionsService {
   constructor(private readonly reactions: ReactionsRepository) {}
 
-  list(postId: string, page: number) {
+  listComments(postId: string, page: number) {
     return this.reactions.findComments(
       postId,
       (page - 1) * PAGE_SIZE,
@@ -16,12 +16,12 @@ export class ReactionsService {
     );
   }
 
-  create(postId: string, authorId: string, text: string) {
+  createComment(postId: string, authorId: string, text: string) {
     return this.reactions.add(postId, authorId, text);
   }
 
-  async delete(postId: string, id: string) {
-    if (!(await this.reactions.remove(postId, id)))
+  async deleteComment(postId: string, commentId: string) {
+    if (!(await this.reactions.remove(postId, commentId)))
       throw new CommentNotFoundError();
   }
 

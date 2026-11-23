@@ -35,9 +35,11 @@ export class ReactionsRepository {
     );
   }
 
-  async remove(postId: string, id: string) {
-    if (!isValidObjectId(id)) return false;
-    const result = await this.comments.deleteOne({ _id: id, postId }).exec();
+  async remove(postId: string, commentId: string) {
+    if (!isValidObjectId(commentId)) return false;
+    const result = await this.comments
+      .deleteOne({ _id: commentId, postId })
+      .exec();
     return result.deletedCount > 0;
   }
 

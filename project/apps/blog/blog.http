@@ -1,0 +1,37 @@
+@host = http://localhost:3001/api
+@authorId = 507f1f77bcf86cd799439011
+
+### Список опубликованных записей
+GET {{host}}/posts?page=1
+
+### Публикация из начальных данных
+GET {{host}}/posts/10000000-0000-4000-8000-000000000001
+
+### Создать публикацию
+# @name createPost
+POST {{host}}/posts
+Content-Type: application/json
+
+{
+  "type": "text",
+  "authorId": "{{authorId}}",
+  "title": "Prisma Test",
+  "announcement": "Пример публикации.",
+  "text": "Публикация сохраняется в PostgreSQL.",
+  "tags": ["nestjs", "prisma"]
+}
+
+### Получить созданную публикацию
+GET {{host}}/posts/{{createPost.response.body.$.id}}
+
+### Изменить публикацию
+PATCH {{host}}/posts/{{createPost.response.body.$.id}}
+Content-Type: application/json
+
+{
+  "title": "Обновлённый заголовок",
+  "tags": ["postgresql"]
+}
+
+### Удалить публикацию
+DELETE {{host}}/posts/{{createPost.response.body.$.id}}

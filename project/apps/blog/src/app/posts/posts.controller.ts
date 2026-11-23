@@ -11,7 +11,6 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -36,14 +35,14 @@ export class PostsController {
   constructor(private readonly posts: PostsService) {}
 
   @Get()
-  @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
   @ApiOperation({ summary: 'Получить опубликованные записи' })
   @ApiOkResponse({ type: PostPageDto })
   async list(@Query() query: PostQueryDto) {
-    const result = await this.posts.list(query.page);
+    const page = Number(query.page ?? 1);
+    const result = await this.posts.list(page);
     return {
       items: result.items.map((post) => post.data),
-      page: query.page,
+      page,
       total: result.total,
     };
   }
@@ -57,7 +56,6 @@ export class PostsController {
   }
 
   @Post()
-  @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
   @ApiOperation({ summary: 'Создать публикацию' })
   @ApiCreatedResponse({ type: PostResponseDto })
   async create(@Body() input: CreatePostDto) {
@@ -65,7 +63,6 @@ export class PostsController {
   }
 
   @Patch(':id')
-  @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
   @ApiOperation({ summary: 'Изменить публикацию' })
   @ApiNotFoundResponse({ description: 'Объект не найден.' })
   @ApiOkResponse({ type: PostResponseDto })

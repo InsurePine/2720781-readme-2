@@ -1,11 +1,28 @@
 Локальный запуск
+
+Перед первым запуском создайте `apps/user/.env`, `apps/blog/.env` и `apps/comment/.env` из шаблонов. Их используют Nest и Prisma. Передача `.env.example` в Docker Compose настраивает только контейнеры. Существующие `.env` команда ниже сохраняет.
+
+```bash
+for service in user blog comment; do
+  [ -f "apps/$service/.env" ] || cp "apps/$service/.env.example" "apps/$service/.env"
+done
+```
+
 npm ci --include=dev
 export JWT_SECRET="$(node -p "require('node:crypto').randomBytes(32).toString('hex')")"
 npx nx run-many -t serve -p user blog comment --inspect=false
+
 Чтобы запустить все базы в Docker:
 docker compose --env-file apps/user/.env.example -f apps/user/docker-compose.yml up -d --wait && docker compose --env-file apps/blog/.env.example -f apps/blog/docker-compose.yml up -d --wait && docker compose --env-file apps/comment/.env.example -f apps/comment/docker-compose.yml up -d --wait
+
 Чтобы остановить:
 docker compose --env-file apps/user/.env.example -f apps/user/docker-compose.yml down && docker compose --env-file apps/blog/.env.example -f apps/blog/docker-compose.yml down && docker compose --env-file apps/comment/.env.example -f apps/comment/docker-compose.yml down
+
+При первом запуске Postgres
+
+npx nx run blog:db-migrate
+npx nx run blog:db-fill
+
 
 # Project
 

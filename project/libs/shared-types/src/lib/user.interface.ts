@@ -7,8 +7,7 @@ export interface User {
   registeredAt: string;
 }
 
-
-export interface AuthUser extends User {
+export interface UserWithPasswordHash extends User {
   passwordHash: string;
 }
 

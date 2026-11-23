@@ -1,65 +1,99 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { isValidObjectId, Model } from 'mongoose';
+import { Prisma } from '@prisma/client';
 import type { Post } from '@project/shared-types' with { 'resolution-mode': 'import' };
+import { PrismaService } from '../prisma/prisma.service';
 import { PostEntity } from './post.entity';
-import { PostModel } from './post.model';
-import type { PostDocument } from './post.model';
 import type { CreatePost } from './post.types';
+
+type PostWithTags = Prisma.PostGetPayload<{ include: { tags: true } }>;
 
 @Injectable()
 export class PostRepository {
-  constructor(
-    @InjectModel(PostModel.name) private readonly posts: Model<PostModel>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findPublished(offset: number, limit: number) {
-    const filter = { status: 'published' as const };
+    const where = { status: 'published' as const };
     const [posts, total] = await Promise.all([
-      this.posts
-        .find(filter)
-        .sort({ publishedAt: -1, _id: -1 })
-        .skip(offset)
-        .limit(limit)
-        .exec(),
-      this.posts.countDocuments(filter).exec(),
+      this.prisma.post.findMany({
+        where,
+        include: { tags: true },
+        orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.post.count({ where }),
     ]);
     return { items: posts.map((post) => this.toEntity(post)), total };
   }
 
-  async find(id: string) {
-    if (!isValidObjectId(id)) return null;
-    const post = await this.posts.findById(id).exec();
+  async findById(id: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id },
+      include: { tags: true },
+    });
     return post ? this.toEntity(post) : null;
   }
 
-  async create(input: CreatePost) {
-    return this.toEntity(await this.posts.create(input));
+  async create({ tags = [], ...data }: CreatePost) {
+    const post = await this.prisma.post.create({
+      data: {
+        ...data,
+        tags: {
+          connectOrCreate: tags.map((name) => ({
+            where: { name },
+            create: { name },
+          })),
+        },
+      },
+      include: { tags: true },
+    });
+    return this.toEntity(post);
   }
 
-  async save(post: PostEntity) {
-    const { id, ...data } = post.data;
-    const saved = await this.posts
-      .findByIdAndUpdate(id, data, { new: true, runValidators: true })
-      .exec();
-    return saved ? this.toEntity(saved) : null;
+  async update(post: PostEntity) {
+    const { id, tags, ...data } = post.data;
+    try {
+      const updated = await this.prisma.post.update({
+        where: { id },
+        data: {
+          ...data,
+          tags: {
+            set: [],
+            connectOrCreate: tags.map((name) => ({
+              where: { name },
+              create: { name },
+            })),
+          },
+        },
+        include: { tags: true },
+      });
+      return this.toEntity(updated);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   async remove(id: string) {
-    if (!isValidObjectId(id)) return false;
-    const result = await this.posts.deleteOne({ _id: id }).exec();
-    return result.deletedCount > 0;
+    const result = await this.prisma.post.deleteMany({ where: { id } });
+    return result.count > 0;
   }
 
-  private toEntity(post: PostDocument) {
-    const { _id, createdAt, publishedAt, ...data } = post.toObject({
-      versionKey: false,
-    });
+  private toEntity(post: PostWithTags) {
+    const { tags, createdAt, publishedAt, ...fields } = post;
+    const data = Object.fromEntries(
+      Object.entries(fields).filter(([, value]) => value !== null),
+    );
     return new PostEntity({
       ...data,
-      id: _id.toString(),
       createdAt: createdAt.toISOString(),
       publishedAt: publishedAt.toISOString(),
+      tags: tags.map((tag) => tag.name),
     } as Post);
   }
 }

@@ -15,7 +15,7 @@ export class PostsService {
   }
 
   async get(id: string) {
-    const post = await this.find(id);
+    const post = await this.findById(id);
     if (post.data.status !== 'published') throw new PostNotFoundError();
     return post;
   }
@@ -25,8 +25,9 @@ export class PostsService {
   }
 
   async update(id: string, input: UpdatePost) {
-    const post = await this.find(id);
-    const updated = await this.posts.save(post.update(input));
+    const post = await this.findById(id);
+    post.update(input);
+    const updated = await this.posts.update(post);
     if (!updated) throw new PostNotFoundError();
     return updated;
   }
@@ -35,8 +36,8 @@ export class PostsService {
     if (!(await this.posts.remove(id))) throw new PostNotFoundError();
   }
 
-  private async find(id: string) {
-    const post = await this.posts.find(id);
+  private async findById(id: string) {
+    const post = await this.posts.findById(id);
     if (!post) throw new PostNotFoundError();
     return post;
   }

@@ -1,11 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, Min } from 'class-validator';
 
 export class PostQueryDto {
-  @ApiPropertyOptional({ type: 'integer', minimum: 1, default: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @ApiPropertyOptional({ type: 'integer', default: 1 })
   page = 1;
 }

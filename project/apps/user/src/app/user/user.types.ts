@@ -1,7 +1,7 @@
-import type { AuthUser } from '@project/shared-types' with { 'resolution-mode': 'import' };
+import type { UserWithPasswordHash } from '@project/shared-types' with { 'resolution-mode': 'import' };
 
 export type NewUser = Pick<
-  AuthUser,
+  UserWithPasswordHash,
   'email' | 'firstName' | 'lastName' | 'passwordHash'
 >;
 export type RegisterUser = Omit<NewUser, 'passwordHash'> & { password: string };

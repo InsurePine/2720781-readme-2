@@ -1,12 +1,4 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import {
-  ArrayMaxSize,
-  IsIn,
-  ValidateIf,
-  IsString,
-  IsUrl,
-  IsNotEmpty,
-} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type {
   PostStatus,
   PostType,
@@ -14,77 +6,56 @@ import type {
 
 const types: PostType[] = ['video', 'text', 'quote', 'photo', 'link'];
 const statuses: PostStatus[] = ['published', 'draft'];
-const urlOptions = { protocols: ['http', 'https'], require_protocol: true };
 
 class PostFieldsDto {
-  @ApiProperty({ description: 'Для video и text' })
-  @IsString()
-  title!: string;
+  @ApiPropertyOptional({ description: 'Для video и text' })
+  title?: string;
 
-  @ApiProperty({ description: 'Для video' })
-  @IsUrl(urlOptions)
-  videoUrl!: string;
+  @ApiPropertyOptional({ description: 'Для video' })
+  videoUrl?: string;
 
-  @ApiProperty({ description: 'Для text' })
-  @IsString()
-  announcement!: string;
+  @ApiPropertyOptional({ description: 'Для text' })
+  announcement?: string;
 
-  @ApiProperty({ description: 'Для text' })
-  @IsString()
-  text!: string;
+  @ApiPropertyOptional({ description: 'Для text' })
+  text?: string;
 
-  @ApiProperty({ description: 'Для quote' })
-  @IsString()
-  quote!: string;
+  @ApiPropertyOptional({ description: 'Для quote' })
+  quote?: string;
 
-  @ApiProperty({ description: 'Для quote' })
-  @IsString()
-  quoteAuthor!: string;
+  @ApiPropertyOptional({ description: 'Для quote' })
+  quoteAuthor?: string;
 
-  @ApiProperty({ description: 'Для photo' })
-  @IsUrl(urlOptions)
-  imageUrl!: string;
+  @ApiPropertyOptional({ description: 'Для photo' })
+  imageUrl?: string;
 
-  @ApiProperty({ description: 'Для link' })
-  @IsUrl(urlOptions)
-  url!: string;
+  @ApiPropertyOptional({ description: 'Для link' })
+  url?: string;
 
-  @ApiProperty({ description: 'Описание ссылки' })
-  @IsString()
-  description!: string;
+  @ApiPropertyOptional({ description: 'Описание ссылки' })
+  description?: string;
 
-  @ApiProperty({ type: [String], maxItems: 8 })
-  @ArrayMaxSize(8)
-  @IsString({ each: true })
-  tags!: string[];
+  @ApiPropertyOptional({ type: [String] })
+  tags?: string[];
 }
 
-const OptionalPostFields = PartialType(PostFieldsDto, {
-  skipNullProperties: false,
-});
-
-export class CreatePostDto extends OptionalPostFields {
+export class CreatePostDto extends PostFieldsDto {
   @ApiProperty({ enum: types })
-  @IsIn(types)
   type!: PostType;
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   authorId!: string;
 }
 
-export class UpdatePostDto extends OptionalPostFields {
+export class UpdatePostDto extends PostFieldsDto {
   @ApiPropertyOptional({ enum: statuses })
-  @ValidateIf(({ status }: UpdatePostDto) => status !== undefined)
-  @IsIn(statuses)
   status?: PostStatus;
 }
 
 export class PostResponseDto extends CreatePostDto {
   @ApiProperty({
-    example: '507f1f77bcf86cd799439011',
-    description: 'MongoDB ObjectId',
+    example: '10000000-0000-4000-8000-000000000001',
+    format: 'uuid',
   })
   id!: string;
 

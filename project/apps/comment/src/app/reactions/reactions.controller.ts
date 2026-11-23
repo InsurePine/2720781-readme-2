@@ -40,7 +40,7 @@ export class ReactionsController {
   @ApiOperation({ summary: 'Получить комментарии к публикации' })
   @ApiOkResponse({ type: CommentPageDto })
   async list(@Param('postId') postId: string, @Query() query: CommentQueryDto) {
-    const result = await this.reactions.list(postId, query.page);
+    const result = await this.reactions.listComments(postId, query.page);
     return {
       items: result.items.map((comment) => comment.data),
       page: query.page,
@@ -56,8 +56,9 @@ export class ReactionsController {
     @Param('postId') postId: string,
     @Body() input: CreateCommentDto,
   ) {
-    return (await this.reactions.create(postId, input.authorId, input.text))
-      .data;
+    return (
+      await this.reactions.createComment(postId, input.authorId, input.text)
+    ).data;
   }
 
   @Delete('comments/:id')
@@ -65,8 +66,11 @@ export class ReactionsController {
   @ApiOperation({ summary: 'Удалить комментарий' })
   @ApiNotFoundResponse({ description: 'Объект не найден.' })
   @ApiNoContentResponse()
-  async delete(@Param('postId') postId: string, @Param('id') id: string) {
-    await this.reactions.delete(postId, id);
+  async delete(
+    @Param('postId') postId: string,
+    @Param('id') commentId: string,
+  ) {
+    await this.reactions.deleteComment(postId, commentId);
   }
 
   @Put('likes/:userId')
