@@ -1,14 +1,33 @@
 import { Catch } from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
-import { CommentNotFoundError } from './comment.errors';
+import { RelatedServiceUnavailableError } from '@project/shared-core';
+import {
+  CommentForbiddenError,
+  CommentNotFoundError,
+  CommentPostNotFoundError,
+} from './comment.errors';
 
-@Catch(CommentNotFoundError)
+@Catch(
+  CommentNotFoundError,
+  CommentPostNotFoundError,
+  CommentForbiddenError,
+  RelatedServiceUnavailableError,
+)
 export class CommentExceptionFilter implements ExceptionFilter {
-  catch(error: CommentNotFoundError, host: ArgumentsHost) {
-    host.switchToHttp().getResponse().status(404).json({
-      statusCode: 404,
-      message: error.message,
-      error: 'Not Found',
-    });
+  catch(error: Error, host: ArgumentsHost) {
+    let statusCode = 404;
+    let description = 'Not Found';
+    if (error instanceof CommentForbiddenError) {
+      statusCode = 403;
+      description = 'Forbidden';
+    } else if (error instanceof RelatedServiceUnavailableError) {
+      statusCode = 503;
+      description = 'Service Unavailable';
+    }
+    host
+      .switchToHttp()
+      .getResponse()
+      .status(statusCode)
+      .json({ statusCode, message: error.message, error: description });
   }
 }

@@ -42,6 +42,7 @@ model Post {
   description      String?
   tags             Tag[]
 
+  @@unique([authorId, originalPostId])
   @@map("posts")
 }
 

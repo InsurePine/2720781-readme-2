@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isValidObjectId, Model, mongo } from 'mongoose';
+import { Model, mongo } from 'mongoose';
 import { UserEntity } from './user.entity';
 import { UserModel } from './user.model';
 import type { UserDocument } from './user.model';
@@ -13,7 +13,6 @@ export class UserRepository {
   ) {}
 
   async findById(id: string) {
-    if (!isValidObjectId(id)) return null;
     const user = await this.users.findById(id).exec();
     return user ? this.toEntity(user) : null;
   }
@@ -32,6 +31,36 @@ export class UserRepository {
         return null;
       throw error;
     }
+  }
+
+  async saveRefreshToken(id: string, refreshTokenHash: string) {
+    await this.users.updateOne({ _id: id }, { refreshTokenHash }).exec();
+  }
+
+  async consumeRefreshToken(id: string, refreshTokenHash: string) {
+    const user = await this.users
+      .findOneAndUpdate(
+        { _id: id, refreshTokenHash },
+        { $unset: { refreshTokenHash: 1 } },
+        { returnDocument: 'after' },
+      )
+      .exec();
+    return user ? this.toEntity(user) : null;
+  }
+
+  async clearRefreshToken(id: string) {
+    await this.users
+      .updateOne({ _id: id }, { $unset: { refreshTokenHash: 1 } })
+      .exec();
+  }
+
+  async updatePassword(id: string, passwordHash: string) {
+    await this.users
+      .updateOne(
+        { _id: id },
+        { $set: { passwordHash }, $unset: { refreshTokenHash: 1 } },
+      )
+      .exec();
   }
 
   private toEntity(user: UserDocument) {

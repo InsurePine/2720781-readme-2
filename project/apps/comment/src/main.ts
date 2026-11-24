@@ -12,6 +12,7 @@ async function bootstrap() {
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true,
+      validationError: { target: false, value: false },
     }),
   );
 
@@ -19,6 +20,7 @@ async function bootstrap() {
     .setTitle('Readme — Comment')
     .setDescription('Данные сервиса хранятся в MongoDB.')
     .setVersion('1.0.0')
+    .addBearerAuth()
     .build();
   SwaggerModule.setup('api/docs', app, () =>
     SwaggerModule.createDocument(app, config),

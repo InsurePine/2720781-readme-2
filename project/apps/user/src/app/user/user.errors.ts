@@ -15,3 +15,15 @@ export class InvalidCredentialsError extends Error {
     super('Неверный email или пароль');
   }
 }
+
+export class InvalidRefreshTokenError extends Error {
+  constructor() {
+    super('Refresh token недействителен или истёк');
+  }
+}
+
+export class InvalidPasswordError extends Error {
+  constructor() {
+    super('Неверный текущий пароль');
+  }
+}

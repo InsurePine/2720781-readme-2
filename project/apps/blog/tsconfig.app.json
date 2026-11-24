@@ -13,6 +13,9 @@
   "exclude": [],
   "references": [
     {
+      "path": "../../libs/shared-core/tsconfig.lib.json"
+    },
+    {
       "path": "../../libs/shared-types/tsconfig.lib.json"
     }
   ]

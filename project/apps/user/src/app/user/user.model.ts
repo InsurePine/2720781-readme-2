@@ -18,6 +18,9 @@ export class UserModel {
   @Prop({ required: true })
   passwordHash!: string;
 
+  @Prop()
+  refreshTokenHash?: string;
+
   @Prop({ required: true, default: Date.now })
   registeredAt!: Date;
 }

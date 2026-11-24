@@ -1,37 +1,127 @@
 @host = http://localhost:3001/api
-@authorId = 507f1f77bcf86cd799439011
+@userHost = http://localhost:3000/api
 
-### Список опубликованных записей
-GET {{host}}/posts?page=1
+### Подготовить автора
+# @name registerAuthor
+POST {{userHost}}/auth/register
+Content-Type: application/json
 
-### Публикация из начальных данных
-GET {{host}}/posts/10000000-0000-4000-8000-000000000001
+{
+  "email": "blog-author-{{$timestamp}}@example.com",
+  "password": "qwery1234",
+  "firstName": "Анна",
+  "lastName": "Соколова"
+}
 
-### Создать публикацию
+### Получить токены автора
+# @name loginAuthor
+POST {{userHost}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{registerAuthor.response.body.$.email}}",
+  "password": "demo1234"
+}
+
+### Создать текстовую публикацию
 # @name createPost
 POST {{host}}/posts
+Authorization: Bearer {{loginAuthor.response.body.$.accessToken}}
 Content-Type: application/json
 
 {
   "type": "text",
-  "authorId": "{{authorId}}",
-  "title": "Prisma Test",
-  "announcement": "Пример публикации.",
-  "text": "Публикация сохраняется в PostgreSQL.",
-  "tags": ["nestjs", "prisma"]
+  "title": "Публикация для проверки изменений",
+  "announcement": "Проверка валидации, постраничное получение публикаций.",
+  "text": "Тестовый текст",
+  "tags": ["NestJS", "nestjs", "prisma"]
 }
 
-### Получить созданную публикацию
+### Фильтрация по автору, типу и тегу; размер страницы
+GET {{host}}/posts?authorId={{registerAuthor.response.body.$.id}}&type=text&tag=NestJS&limit=10&page=1&sort=date
+
+### Сортировка по лайкам
+GET {{host}}/posts?sort=likes&limit=10
+
+### Сортировка по комментариям
+GET {{host}}/posts?sort=comments&limit=10
+
+### Получить созданную публикацию и счётчики
 GET {{host}}/posts/{{createPost.response.body.$.id}}
 
-### Изменить публикацию
+### Проверить наличие опубликованной записи без загрузки содержимого
+HEAD {{host}}/posts/{{createPost.response.body.$.id}}
+
+### Поиск по словам из заголовка
+GET {{host}}/posts/search?query=API&limit=20&page=1
+
+### Изменить заголовок, теги и дату публикации
 PATCH {{host}}/posts/{{createPost.response.body.$.id}}
+Authorization: Bearer {{loginAuthor.response.body.$.accessToken}}
 Content-Type: application/json
 
 {
   "title": "Обновлённый заголовок",
-  "tags": ["postgresql"]
+  "tags": ["postgresql"],
+  "publishedAt": "2026-11-24T12:00:00.000Z"
 }
 
-### Удалить публикацию
+### Перенести публикацию в черновики
+PATCH {{host}}/posts/{{createPost.response.body.$.id}}
+Authorization: Bearer {{loginAuthor.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "status": "draft"
+}
+
+### Получить собственные черновики
+GET {{host}}/posts/drafts?limit=10&page=1
+Authorization: Bearer {{loginAuthor.response.body.$.accessToken}}
+
+### Снова опубликовать запись
+PATCH {{host}}/posts/{{createPost.response.body.$.id}}
+Authorization: Bearer {{loginAuthor.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "status": "published"
+}
+
+### Подготовить второго пользователя
+# @name registerReader
+POST {{userHost}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "blog-reader-{{$timestamp}}@example.com",
+  "password": "qwerty1234",
+  "firstName": "Иван",
+  "lastName": "Петров"
+}
+
+### Получить токены второго пользователя
+# @name loginReader
+POST {{userHost}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{registerReader.response.body.$.email}}",
+  "password": "test1234"
+}
+
+### Репостнуть чужую публикацию
+# @name repost
+POST {{host}}/posts/{{createPost.response.body.$.id}}/reposts
+Authorization: Bearer {{loginReader.response.body.$.accessToken}}
+
+### Удалить собственный репост
+DELETE {{host}}/posts/{{repost.response.body.$.id}}
+Authorization: Bearer {{loginReader.response.body.$.accessToken}}
+
+### Удалить исходную публикацию и её реакции
 DELETE {{host}}/posts/{{createPost.response.body.$.id}}
+Authorization: Bearer {{loginAuthor.response.body.$.accessToken}}
+
+### Недопустимый размер страницы — ожидается 400
+GET {{host}}/posts?limit=26
