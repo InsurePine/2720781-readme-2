@@ -76,7 +76,8 @@
     "tslib": "^2.3.0",
     "@project/shared-core": "0.0.1",
     "@nestjs/jwt": "^11.0.2",
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "@nestjs/schedule": "12.0.4"
   },
   "devDependencies": {
     "@nestjs/testing": "^11.0.0"

@@ -29,7 +29,6 @@ import {
   CurrentUserId,
   JwtAuthGuard,
   MongoIdValidationPipe,
-  ServiceAuthGuard,
 } from '@project/shared-core';
 import {
   CommentPageDto,
@@ -136,24 +135,5 @@ export class ReactionsController {
     @CurrentUserId() userId: string,
   ) {
     return { likesCount: await this.reactions.unlike(postId, userId) };
-  }
-
-  @Delete('reactions')
-  @HttpCode(204)
-  @UseGuards(ServiceAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Служебное удаление реакций; право на удаление публикации проверяет Blog',
-  })
-  @ApiNoContentResponse()
-  @ApiUnauthorizedResponse({ description: 'Необходим access token.' })
-  @ApiForbiddenResponse({
-    description: 'Необходим служебный токен.',
-  })
-  async deleteForPost(
-    @Param('postId', new ParseUUIDPipe({ version: '4' })) postId: string,
-  ) {
-    await this.reactions.deleteForPost(postId);
   }
 }

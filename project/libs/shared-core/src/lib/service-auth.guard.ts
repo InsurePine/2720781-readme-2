@@ -1,16 +1,35 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { CanActivate, ExecutionContext } from '@nestjs/common';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import type { AuthenticatedRequest } from './jwt-auth.guard';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class ServiceAuthGuard implements CanActivate {
-  constructor(private readonly authentication: JwtAuthGuard) {}
+  constructor(private readonly jwt: JwtService) {}
 
   async canActivate(context: ExecutionContext) {
-    await this.authentication.canActivate(context);
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    if (!request.user.service)
+    const request = context
+      .switchToHttp()
+      .getRequest<{ headers: { authorization?: string } }>();
+    const token = /^Bearer\s+(\S+)$/i.exec(
+      request.headers.authorization ?? '',
+    )?.[1];
+    if (!token) throw new UnauthorizedException('Передайте служебный токен');
+
+    let payload: { service?: boolean };
+    try {
+      payload = await this.jwt.verifyAsync<{ service?: boolean }>(token, {
+        algorithms: ['HS256'],
+      });
+    } catch {
+      throw new UnauthorizedException(
+        'Служебный токен недействителен или истёк',
+      );
+    }
+    if (payload.service !== true)
       throw new ForbiddenException('Маршрут доступен только другим сервисам');
     return true;
   }

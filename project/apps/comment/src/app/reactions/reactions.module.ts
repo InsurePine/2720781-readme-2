@@ -8,6 +8,7 @@ import { LikeModel, LikeSchema } from './like.model';
 import { ReactionsController } from './reactions.controller';
 import { ReactionsRepository } from './reactions.repository';
 import { ReactionsService } from './reactions.service';
+import { ReactionsCleanupTask } from './reactions-cleanup.task';
 
 @Module({
   imports: [
@@ -18,6 +19,11 @@ import { ReactionsService } from './reactions.service';
     ]),
   ],
   controllers: [ReactionsController, StatisticsController],
-  providers: [ReactionsService, ReactionsRepository, BlogClient],
+  providers: [
+    ReactionsService,
+    ReactionsRepository,
+    BlogClient,
+    ReactionsCleanupTask,
+  ],
 })
 export class ReactionsModule {}

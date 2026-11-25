@@ -14,6 +14,11 @@ export interface PostWithStatistics {
   commentsCount: number;
 }
 
+type PostComparator = (
+  firstPost: PostWithStatistics,
+  secondPost: PostWithStatistics,
+) => number;
+
 @Injectable()
 export class PostRepository {
   constructor(
@@ -22,54 +27,53 @@ export class PostRepository {
   ) {}
 
   async find(filters: PostFilters) {
-    if (filters.sort === 'likes' || filters.sort === 'comments') {
-      return this.findByReactions(filters);
+    let comparePosts: PostComparator | undefined;
+
+    switch (filters.sort) {
+      case undefined:
+      case 'date':
+        break;
+      case 'likes':
+        comparePosts = (firstPost, secondPost) =>
+          secondPost.likesCount - firstPost.likesCount;
+        break;
+      case 'comments':
+        comparePosts = (firstPost, secondPost) =>
+          secondPost.commentsCount - firstPost.commentsCount;
+        break;
+      default:
+        throw new RangeError('Неподдерживаемый вариант сортировки публикаций');
     }
 
     const where = this.getFilter(filters);
+    const offset = (filters.page - 1) * filters.limit;
+
     const [records, total] = await Promise.all([
       this.prisma.post.findMany({
         where,
         include: { tags: true },
         orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
-        skip: (filters.page - 1) * filters.limit,
-        take: filters.limit,
+        skip: comparePosts ? undefined : offset,
+        take: comparePosts ? undefined : filters.limit,
       }),
-      this.prisma.post.count({ where }),
+      comparePosts ? null : this.prisma.post.count({ where }),
     ]);
-    const statistics = await this.reactions.getStatistics(
-      records.map((post) => post.id),
-    );
-    return { items: this.toViews(records, statistics), total };
-  }
-
-  private async findByReactions(filters: PostFilters) {
-    const records = await this.prisma.post.findMany({
-      where: this.getFilter(filters),
-      include: { tags: true },
-      orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
-    });
     const statistics = await this.reactions.getStatistics(
       records.map((post) => post.id),
     );
     const items = this.toViews(records, statistics);
 
-    if (filters.sort === 'likes') {
-      items.sort((left, right) => right.likesCount - left.likesCount);
-    } else {
-      items.sort((left, right) => right.commentsCount - left.commentsCount);
-    }
+    if (comparePosts) items.sort(comparePosts);
 
-    const offset = (filters.page - 1) * filters.limit;
     return {
-      items: items.slice(offset, offset + filters.limit),
-      total: items.length,
+      items: comparePosts ? items.slice(offset, offset + filters.limit) : items,
+      total: total ?? records.length,
     };
   }
 
   async findById(id: string) {
     const post = await this.prisma.post.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: { tags: true },
     });
     return post ? this.toEntity(post) : null;
@@ -109,7 +113,7 @@ export class PostRepository {
     const { id, tags, publishedAt, ...data } = post.data;
     try {
       const updated = await this.prisma.post.update({
-        where: { id },
+        where: { id, deletedAt: null },
         data: {
           ...data,
           publishedAt: new Date(publishedAt),
@@ -135,13 +139,30 @@ export class PostRepository {
   }
 
   async remove(id: string) {
-    const result = await this.prisma.post.deleteMany({ where: { id } });
+    const result = await this.prisma.post.updateMany({
+      where: { id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
     return result.count > 0;
+  }
+
+  async findDeletedIds(afterId?: string) {
+    const posts = await this.prisma.post.findMany({
+      where: {
+        deletedAt: { not: null },
+        id: afterId ? { gt: afterId } : undefined,
+      },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+      take: 100,
+    });
+    return posts.map((post) => post.id);
   }
 
   private getFilter(filters: PostFilters): Prisma.PostWhereInput {
     const where: Prisma.PostWhereInput = {
       status: filters.status ?? 'published',
+      deletedAt: null,
     };
     if (filters.authorId) where.authorId = filters.authorId;
     if (filters.type) where.type = filters.type;

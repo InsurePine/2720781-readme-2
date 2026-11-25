@@ -42,7 +42,11 @@ export class ReactionsService {
     return this.reactions.getStatistics(postIds);
   }
 
-  async deleteForPost(postId: string) {
-    await this.reactions.removeForPost(postId);
+  async removeDeletedPostReactions() {
+    let postIds = await this.blog.getDeletedPostIds();
+    while (postIds.length > 0) {
+      await this.reactions.removeForPosts(postIds);
+      postIds = await this.blog.getDeletedPostIds(postIds[postIds.length - 1]);
+    }
   }
 }

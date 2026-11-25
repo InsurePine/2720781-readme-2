@@ -91,10 +91,10 @@ export class ReactionsRepository {
     }));
   }
 
-  async removeForPost(postId: string) {
+  async removeForPosts(postIds: string[]) {
     await Promise.all([
-      this.comments.deleteMany({ postId }).exec(),
-      this.likes.deleteMany({ postId }).exec(),
+      this.comments.deleteMany({ postId: { $in: postIds } }).exec(),
+      this.likes.deleteMany({ postId: { $in: postIds } }).exec(),
     ]);
   }
 

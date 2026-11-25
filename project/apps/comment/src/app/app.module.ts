@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { ReactionsModule } from './reactions/reactions.module';
 
@@ -10,6 +11,7 @@ import { ReactionsModule } from './reactions/reactions.module';
       isGlobal: true,
       envFilePath: 'apps/comment/.env',
     }),
+    ScheduleModule.forRoot(),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

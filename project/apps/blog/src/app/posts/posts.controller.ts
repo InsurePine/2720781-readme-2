@@ -23,11 +23,16 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiServiceUnavailableResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { CurrentUserId, JwtAuthGuard } from '@project/shared-core';
+import {
+  CurrentUserId,
+  JwtAuthGuard,
+  ServiceAuthGuard,
+} from '@project/shared-core';
 import {
   CreatePostDto,
   PostDetailsDto,
@@ -45,9 +50,6 @@ import { PostsService } from './posts.service';
   description: 'Некорректные поля, параметры или UUID.',
 })
 @ApiNotFoundResponse({ description: 'Публикация не найдена.' })
-@ApiServiceUnavailableResponse({
-  description: 'Связанный сервис Comment недоступен.',
-})
 @UseFilters(PostExceptionFilter)
 @Controller('posts')
 export class PostsController {
@@ -58,6 +60,9 @@ export class PostsController {
     summary: 'Опубликованные записи: фильтры, сортировка и пагинация',
   })
   @ApiOkResponse({ type: PostPageDto })
+  @ApiServiceUnavailableResponse({
+    description: 'Связанный сервис Comment недоступен.',
+  })
   async list(@Query() query: PostQueryDto) {
     return this.toPageResponse(await this.posts.list(query), query);
   }
@@ -68,6 +73,9 @@ export class PostsController {
       'Поиск опубликованных записей по словам из заголовка; до 20 записей',
   })
   @ApiOkResponse({ type: PostPageDto })
+  @ApiServiceUnavailableResponse({
+    description: 'Связанный сервис Comment недоступен.',
+  })
   async search(@Query() query: SearchPostQueryDto) {
     return this.toPageResponse(
       await this.posts.list({ ...query, search: query.query }),
@@ -80,9 +88,33 @@ export class PostsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить собственные черновики' })
   @ApiOkResponse({ type: PostPageDto })
+  @ApiServiceUnavailableResponse({
+    description: 'Связанный сервис Comment недоступен.',
+  })
   @ApiUnauthorizedResponse({ description: 'Необходим access token.' })
   async drafts(@CurrentUserId() userId: string, @Query() query: PostQueryDto) {
     return this.toPageResponse(await this.posts.drafts(userId, query), query);
+  }
+
+  @Get('deleted')
+  @UseGuards(ServiceAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Служебный список: до 100 ID удалённых публикаций',
+  })
+  @ApiQuery({
+    name: 'afterId',
+    required: false,
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @ApiOkResponse({ type: [String] })
+  @ApiUnauthorizedResponse({ description: 'Необходим служебный токен.' })
+  @ApiForbiddenResponse({ description: 'Маршрут доступен только сервисам.' })
+  getDeletedPostIds(
+    @Query('afterId', new ParseUUIDPipe({ version: '4', optional: true }))
+    afterId?: string,
+  ) {
+    return this.posts.getDeletedPostIds(afterId);
   }
 
   @Head(':id')
@@ -104,6 +136,9 @@ export class PostsController {
     summary: 'Получить опубликованную запись со счётчиками реакций',
   })
   @ApiOkResponse({ type: PostDetailsDto })
+  @ApiServiceUnavailableResponse({
+    description: 'Связанный сервис Comment недоступен.',
+  })
   async get(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.toHttpResponse(await this.posts.get(id));
   }
@@ -142,7 +177,8 @@ export class PostsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Удалить собственную публикацию вместе с комментариями и лайками',
+    summary: 'Пометить собственную публикацию удалённой',
+    description: 'Comment удаляет связанные реакции по расписанию.',
   })
   @ApiNoContentResponse()
   @ApiUnauthorizedResponse({ description: 'Необходим access token.' })

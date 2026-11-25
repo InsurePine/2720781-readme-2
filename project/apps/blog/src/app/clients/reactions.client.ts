@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { RelatedServiceUnavailableError } from '@project/shared-core';
 import axios from 'axios';
 import type { PostStatistics } from '../posts/post.types';
@@ -9,10 +8,7 @@ import type { PostStatistics } from '../posts/post.types';
 export class ReactionsClient {
   private readonly url: string;
 
-  constructor(
-    config: ConfigService,
-    private readonly jwt: JwtService,
-  ) {
+  constructor(config: ConfigService) {
     this.url = config.getOrThrow<string>('COMMENT_SERVICE_URL');
   }
 
@@ -31,18 +27,6 @@ export class ReactionsClient {
           result.set(statistics.postId, statistics);
       }
       return result;
-    } catch {
-      throw new RelatedServiceUnavailableError('Comment');
-    }
-  }
-
-  async deleteForPost(postId: string, userId: string) {
-    try {
-      const token = await this.jwt.signAsync({ sub: userId, service: true });
-      await axios.delete(`${this.url}/posts/${postId}/reactions`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 5000,
-      });
     } catch {
       throw new RelatedServiceUnavailableError('Comment');
     }

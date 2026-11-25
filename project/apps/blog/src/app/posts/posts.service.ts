@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { ReactionsClient } from '../clients/reactions.client';
 import { PostEntity } from './post.entity';
 import {
   PostAlreadyRepostedError,
@@ -11,10 +10,7 @@ import type { CreatePost, PostFilters, UpdatePost } from './post.types';
 
 @Injectable()
 export class PostsService {
-  constructor(
-    private readonly posts: PostRepository,
-    private readonly reactions: ReactionsClient,
-  ) {}
+  constructor(private readonly posts: PostRepository) {}
 
   list(filters: PostFilters) {
     return this.posts.find({ ...filters, status: 'published' });
@@ -51,8 +47,11 @@ export class PostsService {
 
   async delete(id: string, userId: string) {
     await this.getOwnedPost(id, userId);
-    await this.reactions.deleteForPost(id, userId);
     if (!(await this.posts.remove(id))) throw new PostNotFoundError();
+  }
+
+  getDeletedPostIds(afterId?: string) {
+    return this.posts.findDeletedIds(afterId);
   }
 
   async repost(id: string, userId: string) {
