@@ -1,6 +1,8 @@
 import { Controller, Get, Param, UseFilters } from '@nestjs/common';
+import { MongoIdValidationPipe } from '@project/shared-core';
 import {
   ApiNotFoundResponse,
+  ApiBadRequestResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -21,7 +23,8 @@ export class UserController {
   @ApiParam({ name: 'id', example: '507f1f77bcf86cd799439011' })
   @ApiOkResponse({ type: UserResponseDto })
   @ApiNotFoundResponse({ description: 'Пользователь не найден.' })
-  async getUser(@Param('id') id: string) {
+  @ApiBadRequestResponse({ description: 'Некорректный MongoDB ID.' })
+  async getUser(@Param('id', MongoIdValidationPipe) id: string) {
     const user = await this.users.get(id);
     return user.toHttpResponse();
   }

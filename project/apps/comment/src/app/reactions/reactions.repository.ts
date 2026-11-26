@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isValidObjectId, Model, mongo } from 'mongoose';
+import { Model, mongo } from 'mongoose';
 import type { Like } from '@project/shared-types' with { 'resolution-mode': 'import' };
 import { CommentEntity } from './comment.entity';
 import { CommentModel } from './comment.model';
@@ -15,13 +15,13 @@ export class ReactionsRepository {
     @InjectModel(LikeModel.name) private readonly likes: Model<LikeModel>,
   ) {}
 
-  async findComments(postId: string, offset: number, limit: number) {
+  async findComments(postId: string, page: number, limit: number) {
     const filter = { postId };
     const [comments, total] = await Promise.all([
       this.comments
         .find(filter)
         .sort({ createdAt: -1, _id: -1 })
-        .skip(offset)
+        .skip((page - 1) * limit)
         .limit(limit)
         .exec(),
       this.comments.countDocuments(filter).exec(),
@@ -35,8 +35,14 @@ export class ReactionsRepository {
     );
   }
 
+  async findById(postId: string, commentId: string) {
+    const comment = await this.comments
+      .findOne({ _id: commentId, postId })
+      .exec();
+    return comment ? this.toEntity(comment) : null;
+  }
+
   async remove(postId: string, commentId: string) {
-    if (!isValidObjectId(commentId)) return false;
     const result = await this.comments
       .deleteOne({ _id: commentId, postId })
       .exec();
@@ -57,6 +63,39 @@ export class ReactionsRepository {
   async unlike(input: Like) {
     await this.likes.deleteOne(input).exec();
     return this.likes.countDocuments({ postId: input.postId }).exec();
+  }
+
+  async getStatistics(postIds: string[]) {
+    const [comments, likes] = await Promise.all([
+      this.comments
+        .aggregate<{
+          _id: string;
+          count: number;
+        }>([{ $match: { postId: { $in: postIds } } }, { $group: { _id: '$postId', count: { $sum: 1 } } }])
+        .exec(),
+      this.likes
+        .aggregate<{
+          _id: string;
+          count: number;
+        }>([{ $match: { postId: { $in: postIds } } }, { $group: { _id: '$postId', count: { $sum: 1 } } }])
+        .exec(),
+    ]);
+    const commentCounts = new Map(
+      comments.map((item) => [item._id, item.count]),
+    );
+    const likeCounts = new Map(likes.map((item) => [item._id, item.count]));
+    return [...new Set(postIds)].map((postId) => ({
+      postId,
+      likesCount: likeCounts.get(postId) ?? 0,
+      commentsCount: commentCounts.get(postId) ?? 0,
+    }));
+  }
+
+  async removeForPosts(postIds: string[]) {
+    await Promise.all([
+      this.comments.deleteMany({ postId: { $in: postIds } }).exec(),
+      this.likes.deleteMany({ postId: { $in: postIds } }).exec(),
+    ]);
   }
 
   private toEntity(comment: CommentDocument) {

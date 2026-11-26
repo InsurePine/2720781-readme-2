@@ -3,18 +3,20 @@ import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
 import {
   EmailAlreadyExistsError,
   InvalidCredentialsError,
+  InvalidPasswordError,
+  InvalidRefreshTokenError,
   UserNotFoundError,
 } from './user.errors';
 
-@Catch(UserNotFoundError, EmailAlreadyExistsError, InvalidCredentialsError)
+@Catch(
+  UserNotFoundError,
+  EmailAlreadyExistsError,
+  InvalidCredentialsError,
+  InvalidPasswordError,
+  InvalidRefreshTokenError,
+)
 export class UserExceptionFilter implements ExceptionFilter {
-  catch(
-    error:
-      | UserNotFoundError
-      | EmailAlreadyExistsError
-      | InvalidCredentialsError,
-    host: ArgumentsHost,
-  ) {
+  catch(error: Error, host: ArgumentsHost) {
     let statusCode = 401;
     let description = 'Unauthorized';
     if (error instanceof UserNotFoundError) {

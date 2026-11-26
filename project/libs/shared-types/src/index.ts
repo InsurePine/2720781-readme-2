@@ -15,6 +15,7 @@ export type {
   VideoPost,
 } from './lib/post.interface.js';
 export type { Subscription } from './lib/subscription.interface.js';
+export type { TokenPair, TokenPayload } from './lib/token.interface.js';
 export type {
   User,
   UserDetails,

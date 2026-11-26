@@ -20,11 +20,12 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Readme — API сервиса User')
     .setDescription(
-      'Регистрация, вход и получение профиля. Пользователи хранятся в MongoDB.',
+      'Регистрация, access/refresh токены, смена пароля и профили. Пользователи хранятся в MongoDB.',
     )
     .setVersion('1.0.0')
     .addTag('auth', 'Регистрация и аутентификация')
     .addTag('users', 'Профили пользователей')
+    .addBearerAuth()
     .build();
   SwaggerModule.setup(`${globalPrefix}/docs`, app, () =>
     SwaggerModule.createDocument(app, swaggerConfig),

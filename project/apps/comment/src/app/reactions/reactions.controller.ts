@@ -5,20 +5,31 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseUUIDPipe,
   Post,
   Put,
   Query,
   UseFilters,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiServiceUnavailableResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import {
+  CurrentUserId,
+  JwtAuthGuard,
+  MongoIdValidationPipe,
+} from '@project/shared-core';
 import {
   CommentPageDto,
   CommentResponseDto,
@@ -30,62 +41,98 @@ import { CommentQueryDto } from './comment-query.dto';
 import { ReactionsService } from './reactions.service';
 
 @ApiTags('comments and likes')
+@ApiBadRequestResponse({
+  description: 'Некорректный ID, тело запроса или параметры пагинации.',
+})
+@ApiNotFoundResponse({ description: 'Публикация или комментарий не найдены.' })
+@ApiServiceUnavailableResponse({
+  description: 'Связанный сервис Blog недоступен.',
+})
 @UseFilters(CommentExceptionFilter)
 @Controller('posts/:postId')
 export class ReactionsController {
   constructor(private readonly reactions: ReactionsService) {}
 
   @Get('comments')
-  @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
-  @ApiOperation({ summary: 'Получить комментарии к публикации' })
+  @ApiOperation({
+    summary: 'Получить комментарии опубликованной записи; до 50 на странице',
+  })
   @ApiOkResponse({ type: CommentPageDto })
-  async list(@Param('postId') postId: string, @Query() query: CommentQueryDto) {
-    const result = await this.reactions.listComments(postId, query.page);
+  async list(
+    @Param('postId', new ParseUUIDPipe({ version: '4' })) postId: string,
+    @Query() query: CommentQueryDto,
+  ) {
+    const result = await this.reactions.listComments(
+      postId,
+      query.page,
+      query.limit,
+    );
     return {
       items: result.items.map((comment) => comment.data),
       page: query.page,
+      limit: query.limit,
       total: result.total,
+      totalPages: Math.ceil(result.total / query.limit),
     };
   }
 
   @Post('comments')
-  @ApiBadRequestResponse({ description: 'Некорректный запрос.' })
-  @ApiOperation({ summary: 'Добавить комментарий' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Добавить комментарий; автор определяется из access token',
+  })
   @ApiCreatedResponse({ type: CommentResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Необходим access token.' })
   async create(
-    @Param('postId') postId: string,
+    @Param('postId', new ParseUUIDPipe({ version: '4' })) postId: string,
+    @CurrentUserId() userId: string,
     @Body() input: CreateCommentDto,
   ) {
-    return (
-      await this.reactions.createComment(postId, input.authorId, input.text)
-    ).data;
+    return (await this.reactions.createComment(postId, userId, input.text))
+      .data;
   }
 
   @Delete('comments/:id')
   @HttpCode(204)
-  @ApiOperation({ summary: 'Удалить комментарий' })
-  @ApiNotFoundResponse({ description: 'Объект не найден.' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Удалить собственный комментарий' })
   @ApiNoContentResponse()
+  @ApiUnauthorizedResponse({ description: 'Необходим access token.' })
+  @ApiForbiddenResponse({
+    description: 'Комментарий принадлежит другому пользователю.',
+  })
   async delete(
-    @Param('postId') postId: string,
-    @Param('id') commentId: string,
+    @Param('postId', new ParseUUIDPipe({ version: '4' })) postId: string,
+    @Param('id', MongoIdValidationPipe) commentId: string,
+    @CurrentUserId() userId: string,
   ) {
-    await this.reactions.deleteComment(postId, commentId);
+    await this.reactions.deleteComment(postId, commentId, userId);
   }
 
-  @Put('likes/:userId')
-  @ApiOperation({ summary: 'Поставить лайк' })
+  @Put('likes')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Поставить один лайк от текущего пользователя' })
   @ApiOkResponse({ type: LikeCountDto })
-  async like(@Param('postId') postId: string, @Param('userId') userId: string) {
+  @ApiUnauthorizedResponse({ description: 'Необходим access token.' })
+  async like(
+    @Param('postId', new ParseUUIDPipe({ version: '4' })) postId: string,
+    @CurrentUserId() userId: string,
+  ) {
     return { likesCount: await this.reactions.like(postId, userId) };
   }
 
-  @Delete('likes/:userId')
-  @ApiOperation({ summary: 'Снять лайк' })
+  @Delete('likes')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Убрать собственный лайк' })
   @ApiOkResponse({ type: LikeCountDto })
+  @ApiUnauthorizedResponse({ description: 'Необходим access token.' })
   async unlike(
-    @Param('postId') postId: string,
-    @Param('userId') userId: string,
+    @Param('postId', new ParseUUIDPipe({ version: '4' })) postId: string,
+    @CurrentUserId() userId: string,
   ) {
     return { likesCount: await this.reactions.unlike(postId, userId) };
   }

@@ -28,6 +28,7 @@ model Post {
   status           PostStatus @default(published)
   createdAt        DateTime   @default(now()) @map("created_at")
   publishedAt      DateTime   @default(now()) @map("published_at")
+  deletedAt        DateTime?  @map("deleted_at")
   isRepost         Boolean    @default(false) @map("is_repost")
   originalPostId   String?    @map("original_post_id")
   originalAuthorId String?    @map("original_author_id")
@@ -42,6 +43,7 @@ model Post {
   description      String?
   tags             Tag[]
 
+  @@unique([authorId, originalPostId])
   @@map("posts")
 }
 

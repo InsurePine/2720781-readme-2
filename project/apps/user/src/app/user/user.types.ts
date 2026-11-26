@@ -2,7 +2,7 @@ import type { UserWithPasswordHash } from '@project/shared-types' with { 'resolu
 
 export type NewUser = Pick<
   UserWithPasswordHash,
-  'email' | 'firstName' | 'lastName' | 'passwordHash'
+  'email' | 'firstName' | 'lastName' | 'avatarUrl' | 'passwordHash'
 >;
 export type RegisterUser = Omit<NewUser, 'passwordHash'> & { password: string };
 export type LoginUser = Pick<RegisterUser, 'email' | 'password'>;

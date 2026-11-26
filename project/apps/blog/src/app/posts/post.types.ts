@@ -21,6 +21,32 @@ export interface CreatePost extends PostFields {
   authorId: string;
 }
 
+export interface NewPost extends CreatePost {
+  isRepost?: boolean;
+  originalPostId?: string;
+  originalAuthorId?: string;
+}
+
 export interface UpdatePost extends PostFields {
   status?: PostStatus;
+  publishedAt?: string;
+}
+
+export type PostSort = 'date' | 'likes' | 'comments';
+
+export interface PostFilters {
+  page: number;
+  limit: number;
+  authorId?: string;
+  type?: PostType;
+  tag?: string;
+  sort?: PostSort;
+  status?: PostStatus;
+  search?: string;
+}
+
+export interface PostStatistics {
+  postId: string;
+  likesCount: number;
+  commentsCount: number;
 }
